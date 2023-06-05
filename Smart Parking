@@ -1,0 +1,51 @@
+#include <SoftwareSerial.h>
+SoftwareSerial mySerial(2, 3); // RX, TX
+
+#define PARKING_COUNT 4 // Number of parking spaces
+
+// Pin definitions for ultrasonic sensors
+const int trigPins[PARKING_COUNT] = {4, 5, 6, 7};
+const int echoPins[PARKING_COUNT] = {8, 9, 10, 11};
+
+// Status array to keep track of parking spaces availability
+bool parkingStatus[PARKING_COUNT];
+
+void setup() {
+  mySerial.begin(9600);
+  for (int i = 0; i < PARKING_COUNT; i++) {
+    pinMode(trigPins[i], OUTPUT);
+    pinMode(echoPins[i], INPUT);
+    parkingStatus[i] = false;
+  }
+}
+
+void loop() {
+  for (int i = 0; i < PARKING_COUNT; i++) {
+    long duration, distance;
+    digitalWrite(trigPins[i], LOW);
+    delayMicroseconds(2);
+    digitalWrite(trigPins[i], HIGH);
+    delayMicroseconds(10);
+    digitalWrite(trigPins[i], LOW);
+    duration = pulseIn(echoPins[i], HIGH);
+    distance = duration * 0.034 / 2;
+    if (distance > 10 && distance < 200) {
+      // Parking space is available
+      if (!parkingStatus[i]) {
+        parkingStatus[i] = true;
+        mySerial.print("Parking Space ");
+        mySerial.print(i + 1);
+        mySerial.println(": Available");
+      }
+    } else {
+      // Parking space is occupied
+      if (parkingStatus[i]) {
+        parkingStatus[i] = false;
+        mySerial.print("Parking Space ");
+        mySerial.print(i + 1);
+        mySerial.println(": Occupied");
+      }
+    }
+    delay(500); // Delay between each ultrasonic sensor reading
+  }
+}
